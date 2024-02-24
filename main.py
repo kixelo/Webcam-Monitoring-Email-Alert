@@ -1,15 +1,21 @@
 import time
-
 import cv2
 import time
+from emailing import send_email
+import glob
 
 video = cv2.VideoCapture(1) # 0 - one camera, 1 - secondary usb camera, 2
 time.sleep(1)     # to avoid camera blackframes we will wait one second to start the cam
 
 first_frame = None
+status_list = []
+count = 1
 
 while True:
+    status = 0
     check, frame = video.read()
+    #cv2.imwrite(f"images/{count}.png", frame) # to store images
+    #count += 1
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame, (21, 21), 0)  # amount of blurness
     #cv2.imshow("My video", gray_frame_gau)
@@ -30,7 +36,23 @@ while True:
         if cv2.contourArea(contour) < 5000: # 10000 pixels
             continue
         x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)  # color of rectangle (0, 255, 0) -->> green, 3 is width
+        rectangle = cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)  # color of rectangle (0, 255, 0) -->> green, 3 is width
+
+        if rectangle.any():
+            status = 1
+            cv2.imwrite(f"images/{count}.png", frame) # to store images
+            count += 1
+            all_images = glob.glob("images/*.png")
+            index = int(len(all_images)/2)
+            image_with_object = all_images[index]
+
+    status_list.append(status)
+    status_list=status_list[-2:]
+
+    if status_list[0] == 1 and status_list[1] == 0:
+        send_email()
+
+    print(status_list)
 
     cv2.imshow("Video", frame)
     key = cv2.waitKey(1)
