@@ -31,4 +31,4 @@ from threading import Thread
 ```
 
 ## App image
-<img src="https://github.com/kixelo/Music-Event-Scraper/blob/master/email_notification.PNG" />
+<img src="https://github.com/kixelo/Webcam-Monitoring-Email-Alert/blob/master/webcam_movement_alert.PNG" />
