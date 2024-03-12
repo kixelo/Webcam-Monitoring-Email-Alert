@@ -1,8 +1,8 @@
-import cv2                          # pip install opencv-python
+import cv2
 
 array = cv2.imread("image.png")
 
-print(array.shape)         # BGR -->>> openCV work with: Blue, Green, Red
+print(array.shape)
 
 print(type(array))
 print(array)

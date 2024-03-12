@@ -3,28 +3,33 @@ import cv2
 import time
 from emailing import send_email
 import glob
+import os
+from threading import Thread
 
-video = cv2.VideoCapture(1) # 0 - one camera, 1 - secondary usb camera, 2
-time.sleep(1)     # to avoid camera blackframes we will wait one second to start the cam
+video = cv2.VideoCapture(1)
+time.sleep(1)
 
 first_frame = None
 status_list = []
 count = 1
 
+def clean_folder():
+    images = glob.glob("images/*.png")
+    print("clean folder function started")
+    for image in images:
+        os.remove(image)
+    print("clean folder function ended!")
+
 while True:
     status = 0
     check, frame = video.read()
-    #cv2.imwrite(f"images/{count}.png", frame) # to store images
-    #count += 1
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame, (21, 21), 0)  # amount of blurness
-    #cv2.imshow("My video", gray_frame_gau)
 
     if first_frame is None:
         first_frame = gray_frame_gau
 
     delta_frame = cv2.absdiff(first_frame, gray_frame_gau)
-    #cv2.imshow("My video", delta_frame)
 
     thresh_frame = cv2.threshold(delta_frame, 65, 255, cv2.THRESH_BINARY)[1] # 30 is threshold
     dil_frame = cv2.dilate(thresh_frame, None, iterations=2)
@@ -36,7 +41,7 @@ while True:
         if cv2.contourArea(contour) < 5000: # 10000 pixels
             continue
         x, y, w, h = cv2.boundingRect(contour)
-        rectangle = cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)  # color of rectangle (0, 255, 0) -->> green, 3 is width
+        rectangle = cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)
 
         if rectangle.any():
             status = 1
@@ -50,7 +55,11 @@ while True:
     status_list=status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email()
+        email_thread = Thread(target=send_email, args=(image_with_object, ))
+        email_thread.daemon = True
+        clean_thread = Thread(target=clean_folder)
+        clean_thread.daemon = True
+        email_thread.start()
 
     print(status_list)
 
@@ -62,3 +71,5 @@ while True:
 
 
 video.release()
+
+clean_thread.start()
